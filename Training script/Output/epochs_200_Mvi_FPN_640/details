@@ -1,0 +1,5 @@
+ 90%|█████████████████████████████████████████████████████████████████████████████████████▍         | 560/623 [06:29<00:44,  1.43it/s, loss=1.55]
+
+ So, Each epoch is taking 7 to 7.5 mins..
+
+ ran upto 185 without disturbances and crashed
