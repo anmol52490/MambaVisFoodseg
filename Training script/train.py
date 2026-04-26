@@ -120,7 +120,7 @@ def main():
     # Initialize Model and Compile
     model = MambaVisionUperNet(num_classes=104).to(DEVICE)
     # print("=> Compiling Model with torch.compile...")
-    # model = torch.compile(model) # Compiles the execution graph for speed
+    model = torch.compile(model) # Compiles the execution graph for speed
     # model.backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
     # print(model.backbone.is_gradient_checkpointing)
 
@@ -153,7 +153,18 @@ def main():
 
     logger = MetricLogger(save_dir= save_dir,main_file="metrics_peft200.csv", class_file="iou_peft200.csv")
     best_miou = 0.0
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=TOTAL_EPOCHS)
+    warmup_epochs = 5
+    warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+        optimizer, start_factor=0.01, total_iters=warmup_epochs
+    )
+    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=TOTAL_EPOCHS - warmup_epochs
+    )
+    scheduler = torch.optim.lr_scheduler.SequentialLR(
+        optimizer, 
+        schedulers=[warmup_scheduler, cosine_scheduler], 
+        milestones=[warmup_epochs]
+    )
 
 
     start_epoch = 1
