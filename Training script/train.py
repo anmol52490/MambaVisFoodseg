@@ -120,7 +120,7 @@ def main():
     # Initialize Model and Compile
     model = MambaVisionUperNet(num_classes=104).to(DEVICE)
     # print("=> Compiling Model with torch.compile...")
-    model = torch.compile(model) # Compiles the execution graph for speed
+    # model = torch.compile(model) # Compiles the execution graph for speed
     # model.backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
     # print(model.backbone.is_gradient_checkpointing)
 

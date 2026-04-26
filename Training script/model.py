@@ -177,7 +177,7 @@ class MambaVisionUperNet(nn.Module):
 
     
         trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        print(f"Injection Complete. Total Trainable Parameters (TUNA + Head): {trainable:,}")
+        print(f"Injection Complete. Total Trainable Parameters (Decode head): {trainable:,}")
 
     def forward(self, x):
         input_size = (x.size()[2], x.size()[3])
