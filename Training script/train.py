@@ -16,7 +16,7 @@ import time
 import datetime
 import cv2
 
-from model import MambaVisionFPN
+from model import MambaVisionUperNet
 from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, DiceCELoss, LovaszSoftmaxLoss
 
 # --- Hyperparameters ---
@@ -106,10 +106,10 @@ def main():
     ToTensorV2(),
 ])
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Safely creates the save path inside that directory
-    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi_FPN_640")
+    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi_UperNet_640")
     os.makedirs(save_dir, exist_ok=True)
 
     batch_loss_file = os.path.join(save_dir, "batch_losses_peft.csv")
@@ -118,7 +118,7 @@ def main():
             f.write("Epoch,Batch_Index,Loss\n")
 
     # Initialize Model and Compile
-    model = MambaVisionFPN(num_classes=104).to(DEVICE)
+    model = MambaVisionUperNet(num_classes=104).to(DEVICE)
     # print("=> Compiling Model with torch.compile...")
     # model = torch.compile(model) # Compiles the execution graph for speed
     # model.backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
