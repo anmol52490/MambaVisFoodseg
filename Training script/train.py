@@ -109,7 +109,7 @@ def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Safely creates the save path inside that directory
-    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi_UperNet_640")
+    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_UperNet_640")
     os.makedirs(save_dir, exist_ok=True)
 
     batch_loss_file = os.path.join(save_dir, "batch_losses_peft.csv")

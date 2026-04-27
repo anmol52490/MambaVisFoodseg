@@ -9,7 +9,7 @@ from transformers import logging
 logging.set_verbosity_error()
 import sys
 
-sys.path.append("/mnt/d/swinv2resumed/MambaVision-L2-1K")
+sys.path.append("/mnt/d/swinv2resumed/MambaVision-L2-512-21K")
 
 
 from modeling_mambavision import MambaVisionModel
@@ -149,14 +149,14 @@ class MambaVisionUperNet(nn.Module):
 
         MambaVisionModel.all_tied_weights_keys = {}
 
-
+        model_path = "/mnt/d/swinv2resumed/MambaVision-L2-512-21K"
         config = AutoConfig.from_pretrained(
-            "nvidia/MambaVision-L2-1K",
+            model_path,
             trust_remote_code=True
         )
 
         self.backbone = MambaVisionModel.from_pretrained(
-            "nvidia/MambaVision-L2-1K",
+            model_path,
             config=config,
             trust_remote_code=True
         )
@@ -183,7 +183,7 @@ class MambaVisionUperNet(nn.Module):
         input_size = (x.size()[2], x.size()[3])
 
         dd, backbone_output = self.backbone(x)
-        
+
         features = list(backbone_output)
         
 
