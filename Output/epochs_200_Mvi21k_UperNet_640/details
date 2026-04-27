@@ -1,0 +1,7 @@
+Injection Complete. Total Trainable Parameters (Decode head): 67,778,927
+Total trainable params: 67,778,927
+Total params: 309,333,751
+21.91% of params are trainable
+
+Epoch [1/200]
+ 20%|██████████▌                                          | 100/499 [01:48<06:46,  1.02s/it, loss=5.6]
