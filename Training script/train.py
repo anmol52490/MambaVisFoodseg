@@ -22,7 +22,7 @@ from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, Di
 # --- Hyperparameters ---
 LR = 1e-4 # Higher LR because we are training from scratch (Adapters + Decoder)
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 8# SwinV2 + UperNet uses heavy VRAM; reduced to 16.
+BATCH_SIZE = 10# SwinV2 + UperNet uses heavy VRAM; reduced to 16.
 TOTAL_EPOCHS = 200
 EVAL_FREQ = 5
 LOSS_SWITCH_EPOCH = int(TOTAL_EPOCHS * 0.85)
@@ -157,12 +157,13 @@ def main():
     warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
         optimizer, start_factor=0.01, total_iters=warmup_epochs
     )
-    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=TOTAL_EPOCHS - warmup_epochs
+    # power=1.0 matches the linear decay used in SOTA segmentation papers
+    poly_scheduler = torch.optim.lr_scheduler.PolynomialLR(
+        optimizer, total_iters=TOTAL_EPOCHS - warmup_epochs, power=1.0
     )
     scheduler = torch.optim.lr_scheduler.SequentialLR(
         optimizer, 
-        schedulers=[warmup_scheduler, cosine_scheduler], 
+        schedulers=[warmup_scheduler, poly_scheduler], 
         milestones=[warmup_epochs]
     )
 
