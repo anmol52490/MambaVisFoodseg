@@ -169,7 +169,7 @@ def main():
 
 
     start_epoch = 1
-    resume_path = os.path.join(save_dir, "checkpoints", "latest_training_state.pth.tar")
+    resume_path = os.path.join(save_dir, "models", "44.25MIOU_0.40Loss_78.14pixAcc_56.25mAcc_model.pth.tar")
     
     if os.path.isfile(resume_path):
         print(f"=> Loading checkpoint '{resume_path}'")
