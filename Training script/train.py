@@ -16,7 +16,7 @@ import time
 import datetime
 import cv2
 
-from model import MambaVisionUperNet
+from model import MambaVisionFPN
 from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, DiceCELoss, LovaszSoftmaxLoss
 
 # --- Hyperparameters ---
@@ -118,7 +118,7 @@ def main():
             f.write("Epoch,Batch_Index,Loss\n")
 
     # Initialize Model and Compile
-    model = MambaVisionUperNet(num_classes=104).to(DEVICE)
+    model = MambaVisionFPN(num_classes=104).to(DEVICE)
     # print("=> Compiling Model with torch.compile...")
     # model = torch.compile(model) # Compiles the execution graph for speed
     # model.backbone.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
@@ -233,7 +233,12 @@ def main():
 
             if metrics['miou'] > best_miou:
                 best_miou = metrics['miou']
-                checkpoint = {'state_dict': model.state_dict(), 'optimizer': optimizer.state_dict()}
+                checkpoint = {
+                    'epoch': epoch,
+                    'state_dict': model.state_dict(), 
+                    'optimizer': optimizer.state_dict(),
+                    'scheduler': scheduler.state_dict()
+                }
                 # save_dir = "Output/epochs_200_Mvi_FPN_640"
                 model_dir = os.path.join(save_dir, "models")
 

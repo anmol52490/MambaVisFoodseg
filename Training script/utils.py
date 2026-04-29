@@ -7,7 +7,9 @@ from torch.utils.data import DataLoader
 from dataset import FoodSegDataset
 
 def save_checkpoint(state, filename='best_model.pth.tar'):
-    torch.save(state, filename)
+    temp_filename = filename + ".tmp"
+    torch.save(state, temp_filename)
+    os.replace(temp_filename, filename)
 
 def load_checkpoint(checkpoint, model):
     model.load_state_dict(checkpoint['state_dict'])
