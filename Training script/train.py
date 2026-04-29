@@ -109,7 +109,7 @@ def main():
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Safely creates the save path inside that directory
-    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_UperNet_640")
+    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_FPN_640")
     os.makedirs(save_dir, exist_ok=True)
 
     batch_loss_file = os.path.join(save_dir, "batch_losses_peft.csv")
@@ -169,7 +169,7 @@ def main():
 
 
     start_epoch = 1
-    resume_path = os.path.join(save_dir, "models", "44.25MIOU_0.40Loss_78.14pixAcc_56.25mAcc_model.pth.tar")
+    resume_path = os.path.join(save_dir, "models", "latest_training_state.pth.tar")
     
     if os.path.isfile(resume_path):
         print(f"=> Loading checkpoint '{resume_path}'")
