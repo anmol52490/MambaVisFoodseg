@@ -207,6 +207,11 @@ def main():
         print(f"=> Successfully resumed from epoch {start_epoch - 1}. Next up: Epoch {start_epoch}")
     else:
         print("=> No resume checkpoint found. Starting from scratch.")
+    if start_epoch > LOSS_SWITCH_EPOCH:
+        print(f"=> Resuming in Phase 2: LovaszSoftmaxLoss is inherently active.")
+        active_loss_fn = lovasz_loss
+    else:
+        active_loss_fn = dice_ce_loss
     
     print("--- Starting Training ---")
     for epoch in range(start_epoch, TOTAL_EPOCHS + 1):
