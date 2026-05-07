@@ -20,16 +20,32 @@ from model import MambaVisionFPN
 from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, DiceCELoss, LovaszSoftmaxLoss
 
 # --- Hyperparameters ---
-LR = 1e-4 # Higher LR because we are training from scratch (Adapters + Decoder)
+TRAINING_PHASE = 1  # Set to 1 for 120 epochs (512px). Set to 2 for 80 epochs (640px).
+
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 10# SwinV2 + UperNet uses heavy VRAM; reduced to 16.
-TOTAL_EPOCHS = 200
-EVAL_FREQ = 5
-LOSS_SWITCH_EPOCH = int(TOTAL_EPOCHS * 0.85)
-IMG_HEIGHT = 640
-IMG_WIDTH = 640
-IMG_SIZE = 640
 ACCUM_STEPS = 2
+EVAL_FREQ = 5
+GLOBAL_LOSS_SWITCH = int(200 * 0.85) # Global Epoch 170
+
+if TRAINING_PHASE == 1:
+    IMG_SIZE = 512
+    BATCH_SIZE = 16 
+    TOTAL_EPOCHS = 120
+    # Evaluates to 170. Safely bypassed during Phase 1.
+    LOSS_SWITCH_EPOCH = GLOBAL_LOSS_SWITCH 
+    LR = 1e-4
+    SUB_DIR_NAME = "epochs_120_Mvi21k_FPN_512"
+    RESUME_FILENAME = "latest_training_state.pth.tar"
+else:
+    IMG_SIZE = 640
+    BATCH_SIZE = 10 
+    TOTAL_EPOCHS = 80
+    # Triggers precisely at Phase 2's internal epoch 50 (Global 170)
+    LOSS_SWITCH_EPOCH = GLOBAL_LOSS_SWITCH - 120 
+    LR = 2e-5
+    SUB_DIR_NAME = "epochs_80_Mvi21k_FPN_640"
+    # When starting Phase 2, insert your best Phase 1 model filename here:
+    RESUME_FILENAME = "models/YOUR_BEST_PHASE1_MODEL.pth.tar"
 
 def train_fn(loader, model, optimizer, loss_fn, accum_steps):
     model.train()
@@ -74,22 +90,27 @@ def train_fn(loader, model, optimizer, loss_fn, accum_steps):
 def main():
     script_start_time = time.time()
     
-    train_transform = A.Compose([
-    A.SmallestMaxSize(max_size=IMG_SIZE, p=1.0),
-    A.RandomScale(scale_limit=(-0.5, 1.0), p=1.0),
-    A.PadIfNeeded(
-        min_height=IMG_SIZE, 
-        min_width=IMG_SIZE, 
-        border_mode=cv2.BORDER_CONSTANT, 
-        fill=[0, 0, 0], 
-        fill_mask=0 
-    ),
-    A.RandomCrop(height=IMG_SIZE, width=IMG_SIZE, p=1.0),
-    A.HorizontalFlip(p=0.5),
-    A.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1, p=0.5),
-    A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ToTensorV2(),
-])
+    if TRAINING_PHASE == 1:
+        train_transform = A.Compose([
+            A.SmallestMaxSize(max_size=IMG_SIZE, p=1.0),
+            A.RandomScale(scale_limit=(-0.5, 1.0), p=1.0),
+            A.PadIfNeeded(min_height=IMG_SIZE, min_width=IMG_SIZE, border_mode=cv2.BORDER_CONSTANT, fill=[0, 0, 0], fill_mask=0),
+            A.RandomCrop(height=IMG_SIZE, width=IMG_SIZE, p=1.0),
+            A.HorizontalFlip(p=0.5),
+            A.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.1, p=0.5),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ])
+    else:
+        # Phase 2: Removed RandomScale and ColorJitter to focus purely on boundaries
+        train_transform = A.Compose([
+            A.SmallestMaxSize(max_size=IMG_SIZE, p=1.0),
+            A.PadIfNeeded(min_height=IMG_SIZE, min_width=IMG_SIZE, border_mode=cv2.BORDER_CONSTANT, fill=[0, 0, 0], fill_mask=0),
+            A.RandomCrop(height=IMG_SIZE, width=IMG_SIZE, p=1.0),
+            A.HorizontalFlip(p=0.5),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ToTensorV2(),
+        ])
 
 
     val_transform = A.Compose([
@@ -108,8 +129,11 @@ def main():
 
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Safely creates the save path inside that directory
-    save_dir = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_FPN_640")
+    # 1. Create the Master Output Directory
+    MASTER_DIR = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_FPN_512_640")
+    
+    # 2. Create the Nested Phase Directory
+    save_dir = os.path.join(MASTER_DIR, SUB_DIR_NAME)
     os.makedirs(save_dir, exist_ok=True)
 
     batch_loss_file = os.path.join(save_dir, "batch_losses_peft.csv")
@@ -169,44 +193,48 @@ def main():
 
 
     start_epoch = 1
-    resume_path = os.path.join(save_dir, "models", "46.97MIOU_0.30Loss_79.41pixAcc_59.65mAcc_model.pth.tar")
-    
+    if TRAINING_PHASE == 2 and "models" in RESUME_FILENAME:
+        resume_path = os.path.join(MASTER_DIR, "epochs_120_Mvi21k_FPN_512", RESUME_FILENAME)
+    else:
+        resume_path = os.path.join(save_dir, "checkpoints", RESUME_FILENAME)
+
     if os.path.isfile(resume_path):
         print(f"=> Loading checkpoint '{resume_path}'")
         checkpoint = torch.load(resume_path, map_location=DEVICE, weights_only=False)
-        
         model.load_state_dict(checkpoint['state_dict'])
 
         print("=> Pre-allocating contiguous VRAM blocks to prevent fragmentation...")
         model.train()
-
-
-        dummy_data = torch.randn(BATCH_SIZE, 3, IMG_SIZE, IMG_SIZE, device=DEVICE)
-        dummy_data.requires_grad_(True) # Forces PyTorch to build the full memory graph
-
+        dummy_data = torch.randn(BATCH_SIZE, 3, IMG_SIZE, IMG_SIZE, device=DEVICE).requires_grad_(True)
         with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
             dummy_preds = model(dummy_data)
             dummy_loss = dummy_preds.sum()
         dummy_loss.backward()
-
         optimizer.zero_grad(set_to_none=True)
         del dummy_data, dummy_preds, dummy_loss
 
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
-        start_epoch = checkpoint['epoch'] + 1  # Start at the next epoch
-
-        # 3. Destroy the 1.5GB dictionary object immediately
+        # Phase-aware state loading
+        if TRAINING_PHASE == 1 or (TRAINING_PHASE == 2 and "latest_training_state" in resume_path):
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            start_epoch = checkpoint.get('epoch', 0) + 1
+            if 'scheduler' in checkpoint:
+                scheduler.load_state_dict(checkpoint['scheduler'])
+            else:
+                for _ in range(start_epoch - 1):
+                    scheduler.step()
+            print(f"=> Successfully resumed from epoch {start_epoch - 1}. Next up: Epoch {start_epoch}")
+        else:
+            print("=> Phase 2 Initiated: Weights loaded. Optimizer/Scheduler reset for 50-epoch refinement.")
+            start_epoch = 1
+            
         del checkpoint
-        
-        # 4. Force Python garbage collection and wipe the CUDA memory cache
         import gc
         gc.collect()
         torch.cuda.empty_cache()
-        
-        print(f"=> Successfully resumed from epoch {start_epoch - 1}. Next up: Epoch {start_epoch}")
     else:
         print("=> No resume checkpoint found. Starting from scratch.")
+
+
     if start_epoch > LOSS_SWITCH_EPOCH:
         print(f"=> Resuming in Phase 2: LovaszSoftmaxLoss is inherently active.")
         active_loss_fn = lovasz_loss
