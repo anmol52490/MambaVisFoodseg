@@ -20,7 +20,7 @@ from model import MambaVisionFPN
 from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, DiceCELoss, LovaszSoftmaxLoss
 
 # --- Hyperparameters ---
-TRAINING_PHASE = 1  # Set to 1 for 120 epochs (512px). Set to 2 for 80 epochs (640px).
+TRAINING_PHASE = 2  # Set to 1 for 120 epochs (512px). Set to 2 for 80 epochs (640px).
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 ACCUM_STEPS = 2
@@ -45,7 +45,7 @@ else:
     LR = 2e-5
     SUB_DIR_NAME = "epochs_80_Mvi21k_FPN_640"
     # When starting Phase 2, insert your best Phase 1 model filename here:
-    RESUME_FILENAME = "models/YOUR_BEST_PHASE1_MODEL.pth.tar"
+    RESUME_FILENAME = "models/D:\swinv2resumed\MambaVisFoodseg\Output\epochs_200_Mvi21k_FPN_512_640\epochs_120_Mvi21k_FPN_512\models\46.70MIOU_1.06Loss_78.76pixAcc_60.62mAcc_model.pth.tar"
 
 def train_fn(loader, model, optimizer, loss_fn, accum_steps):
     model.train()
