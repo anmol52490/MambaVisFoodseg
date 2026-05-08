@@ -1,0 +1,8 @@
+Epoch [120/120]
+Average Train Loss: 1.0628
+=> Evaluating...
+Val Loss: 2.0386 |mAcc: 60.62% | Global Pixel Acc: 78.76% | mIoU: 46.70%
+
+==================================================
+✅ SCRIPT COMPLETE: Total execution time was 9:55:11
+==================================================
