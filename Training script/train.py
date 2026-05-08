@@ -27,11 +27,13 @@ ACCUM_STEPS = 2
 EVAL_FREQ = 5
 GLOBAL_LOSS_SWITCH = int(200 * 0.85) # Global Epoch 170
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MASTER_DIR = os.path.join(BASE_DIR, "Output", "epochs_200_Mvi21k_FPN_512_640")
+
 if TRAINING_PHASE == 1:
     IMG_SIZE = 512
     BATCH_SIZE = 16 
     TOTAL_EPOCHS = 120
-    # Evaluates to 170. Safely bypassed during Phase 1.
     LOSS_SWITCH_EPOCH = GLOBAL_LOSS_SWITCH 
     LR = 1e-4
     SUB_DIR_NAME = "epochs_120_Mvi21k_FPN_512"
@@ -40,12 +42,17 @@ else:
     IMG_SIZE = 640
     BATCH_SIZE = 10 
     TOTAL_EPOCHS = 80
-    # Triggers precisely at Phase 2's internal epoch 50 (Global 170)
     LOSS_SWITCH_EPOCH = GLOBAL_LOSS_SWITCH - 120 
     LR = 2e-5
     SUB_DIR_NAME = "epochs_80_Mvi21k_FPN_640"
-    # When starting Phase 2, insert your best Phase 1 model filename here:
-    RESUME_FILENAME = "models/46.70MIOU_1.06Loss_78.76pixAcc_60.62mAcc_model.pth.tar"
+    
+    # Check if a Phase 2 crash state exists to resume from
+    phase2_crash_path = os.path.join(MASTER_DIR, SUB_DIR_NAME, "checkpoints", "latest_training_state.pth.tar")
+    if os.path.isfile(phase2_crash_path):
+        RESUME_FILENAME = "latest_training_state.pth.tar"
+    else:
+        # If no crash state, initiate Phase 2 using the best Phase 1 model
+        RESUME_FILENAME = "models/46.70MIOU_1.06Loss_78.76pixAcc_60.62mAcc_model.pth.tar"
 
 def train_fn(loader, model, optimizer, loss_fn, accum_steps):
     model.train()
