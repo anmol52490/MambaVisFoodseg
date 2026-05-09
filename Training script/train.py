@@ -22,7 +22,7 @@ from utils import get_loaders, check_accuracy, save_checkpoint, MetricLogger, Di
 # --- Hyperparameters ---
 LR = 2e-5 # Higher LR because we are training from scratch (Adapters + Decoder)
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 10# SwinV2 + UperNet uses heavy VRAM; reduced to 16.
+BATCH_SIZE = 8# SwinV2 + UperNet uses heavy VRAM; reduced to 16.
 TOTAL_EPOCHS = 200
 EVAL_FREQ = 5
 LOSS_SWITCH_EPOCH = int(TOTAL_EPOCHS * 0.85)
